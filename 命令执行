@@ -1,0 +1,125 @@
+<a name="os7ex"></a>
+## 🚩一、漏洞原理
+命令执行漏洞是指：应用有时候会调用一些执行系统命令的函数，但是代码中没有对用户可控参数进行过滤，导致用户可以控制这些函数中的参数，从而拼接成恶意命令造成攻击行为。
+<a name="OYTL5"></a>
+## 🚩二、利用漏洞（是指ctf题目中qwq）
+命令执行其实大部分就是php的代码和linux下的命令，这里不再详细描述。写一下在题目中常见的过滤以及绕过办法吧O(∩_∩)O
+<a name="jQtka"></a>
+### 🏷关于管道符：
+<a name="yANR6"></a>
+#### 🔖windows下
+
+1. | 直接执行后面的语句
+2. || 如果前面命令是错的那么就执行后面的语句，否则只执行前面的语句
+3. & 前面和后面的命令都要执行，无论前面真假
+4. && 如果前面为假，后面的命令也不执行，如果前面为真则执行俩条命令
+<a name="Ijmpp"></a>
+#### 🔖linxu下
+
+1. ; 前面和后面命令都要执行，无论前面真假
+2. | 直接执行后面的语句
+3. || 如果前面命令是错的那么就执行后面的语句，否则只执行前面的语句
+4. & 前面和后面命令都要执行，无论前面真假
+5. && 如果前面为假，后面的命令也不执行，如果前面为真则执行俩条命令
+<a name="GEqx3"></a>
+### 🏷空格绕过
+
+- >、<、<>重定向符
+- %09(需要php环境)
+- ${IFS}
+- $IFS$9
+- {cat,flag.php} //用逗号实现了空格功能
+- %20
+<a name="JFXm5"></a>
+### 🏷命令执行函数
+
+- system()
+- passthru()
+- exec()
+- shell_exec()
+- popen()
+- proc_open()
+- pcntl_exec()
+- 反引号 同shell_exec()
+<a name="kMnCf"></a>
+### 🏷黑名单绕过
+拼接
+```
+a=c;b=at;c=fl;d=ag; $a$b $c$d
+```
+base64编码<br />在flag等字符串被过滤的时候我们可以试着把命令转换为base64
+
+反斜线
+```
+c\at fl\ag
+```
+单引号、双引号
+```
+c""at fl""ag
+c''at fl''ag
+```
+正则（cat命令在bin下，所以/bin/cat）
+```
+/???/?at ????
+```
+<a name="SmX1N"></a>
+### 🏷过滤cat
+
+1. more:一页一页的显示档案内容
+2. less:与 more 类似
+3. head:查看头几行
+4. tac:从最后一行开始显示，可以看出 tac 是 cat 的反向显示
+5. tail:查看尾几行
+6. nl：显示的时候，顺便输出行号
+7. od:以二进制的方式读取档案内容
+8. vi:一种编辑器，这个也可以查看
+9. vim:一种编辑器，这个也可以查看
+10. sort:可以查看
+11. uniq:可以查看
+
+<a name="ISJHg"></a>
+### 🏷关于通配符绕过
+在linux系统中有一些通配符<br />匹配任何字符串和文本，包括空字符串；<br />*代表任意字符（0个或多个）<br />?匹配任何一个字符(不能在括号内)?表示一个字符<br />[abcd]匹配abcd中任何一个字符<br />[a-z]表示匹配从a到z的字符。
+<a name="ARzGE"></a>
+### 🏷括号被过滤
+![1999159-20201002223158950-1419102854.png](https://cdn.nlark.com/yuque/0/2023/png/35135677/1683012366810-f7b5ff1f-4eeb-45a0-b42f-e26f5e3f5f79.png#averageHue=%23f0e6ac&clientId=u1b135748-8f39-4&from=paste&height=243&id=u4a08c965&originHeight=243&originWidth=352&originalType=binary&ratio=1&rotation=0&showTitle=false&size=8452&status=done&style=none&taskId=u8417840a-c963-4c6b-a9bb-cc839486681&title=&width=352)<br />参考大佬的图qwq<br />所以要用包含函数进行命令执行，就是使用php伪协议读取flag文件
+<a name="b23HN"></a>
+### 🏷关于绕过>/dev/null 2>&1
+这个的意思其实是：让我们命令执行的结果进入一个黑洞，既然进入了黑洞了那么就无回显了所以我们需要进行命令分隔等操作。
+> /dev/null 2>&1 就是让标准输出重定向到/dev/null中（丢弃标准输出），然后错误输出由于重用了标准输出的描述符，所以错误输出也被定向到了/dev/null中，错误输出同样也被丢弃了。执行了这条命令之后，该条shell命令将不会输出任何信息到控制台，也不会有任何信息输出到文件中。
+
+; 分号<br />| 只执行后面那条命令<br />|| 只执行前面命令<br />& 俩条命令都执行<br />&& 俩条命令都执行
+<a name="PHw32"></a>
+### preg_replace()+/e
+执行一个正则表达式的搜索和替换		 ![image.png](https://cdn.nlark.com/yuque/0/2023/png/35135677/1682495174039-790a1dd7-3fb1-4b41-bb10-d86c68e4765d.png#averageHue=%23f5f4f4&clientId=ub2c2428a-b2a1-4&from=paste&height=114&id=ua06da9c3&originHeight=114&originWidth=893&originalType=binary&ratio=1&rotation=0&showTitle=false&size=10078&status=done&style=none&taskId=u41fcbc01-d325-4d6d-8342-c5542d5d3f5&title=&width=893)<br />搜索subject中匹配pattern的部分，以replacement进行替换。如果pattern的模式修饰符使用/e，那么当subject被匹配成功时，replacement会被当作PHP代码执行<br />这里$pattern是匹配模式,$repacement是替换的字符串$subject是要进行搜索和替换的字符串<br />可是，preg_replace()函数的/e修饰符在PHP7中被移除<br />例题：
+```php
+<?php
+  highlight_file(__FILE__);
+echo phpversion();
+$cmd=$_POST['cmd'];
+preg_replace("mochu/e",$cmd,"mochu7");
+
+#这个时候我们post传入的cmd变量就会被当初代码执行。
+
+```
+<a name="miyWr"></a>
+### create_function()
+创建一个匿名（lambda样式）函数<br />![image.png](https://cdn.nlark.com/yuque/0/2023/png/35135677/1682495484161-787e1d01-1152-4ddf-b124-7325c71da4fa.png#averageHue=%23f7f6f6&clientId=ub2c2428a-b2a1-4&from=paste&height=75&id=u25cc5230&originHeight=75&originWidth=534&originalType=binary&ratio=1&rotation=0&showTitle=false&size=3822&status=done&style=none&taskId=u78e3cc9a-1631-4814-9462-792eedb86cb&title=&width=534)<br />根据传递的参数创建一个匿名函数，并返回唯一的名称。如果没有严格对参数传递进行过滤，那么可以构造payload传递给create_function()对参数或函数体闭合注入恶意代码。
+```php
+<?php
+  highlight_file(__FILE__);
+$cmd=$_POST['cmd'];
+$code='echo'.$cmd.'ok'.$a.";";
+$func=create_function('$a',$code);
+?>
+
+payload:id=";}phpinfo();//
+#其实上面的create_function('$a',$code)就等同于:
+function a($a){
+echo "ok";}
+phpinfo();//;
+}
+```
+	这样我们就可以让phpinfo()进行执行。这里出了点小问题。执行过后发现并没有回显，但是F12源代码中有命令执行的结果。如果有大师傅知道的话希望纠正qwq。
+<a name="fSi2a"></a>
+### 
